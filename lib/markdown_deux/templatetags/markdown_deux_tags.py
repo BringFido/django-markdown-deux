@@ -1,14 +1,11 @@
 from django import template
 from django.utils.safestring import mark_safe
-from django.utils.encoding import force_text
 
 import markdown_deux
 from markdown_deux.conf import settings
 
 
-
 register = template.Library()
-
 
 @register.filter(name="markdown")
 def markdown_filter(value, style="default"):
@@ -22,15 +19,9 @@ def markdown_filter(value, style="default"):
 
     Markdown "styles" are defined by the `MARKDOWN_DEUX_STYLES` setting.
     """
-    try:
-        return mark_safe(markdown_deux.markdown(value, style))
-    except ImportError:
-        if settings.DEBUG:
-            raise template.TemplateSyntaxError("Error in `markdown` filter: "
-                "The python-markdown2 library isn't installed.")
-        return force_text(value)
-markdown_filter.is_safe = True
+    return mark_safe(markdown_deux.markdown(value, style))
 
+markdown_filter.is_safe = True
 
 @register.tag(name="markdown")
 def markdown_tag(parser, token):
@@ -46,19 +37,14 @@ def markdown_tag(parser, token):
     parser.delete_first_token() # consume '{% endmarkdown %}'
     return MarkdownNode(style, nodelist)
 
+
 class MarkdownNode(template.Node):
     def __init__(self, style, nodelist):
         self.style = style
         self.nodelist = nodelist
     def render(self, context):
         value = self.nodelist.render(context)
-        try:
-            return mark_safe(markdown_deux.markdown(value, self.style))
-        except ImportError:
-            if settings.DEBUG:
-                raise template.TemplateSyntaxError("Error in `markdown` tag: "
-                    "The python-markdown2 library isn't installed.")
-            return force_text(value)
+        return mark_safe(markdown_deux.markdown(value, self.style))
 
 
 @register.inclusion_tag("markdown_deux/markdown_cheatsheet.html")
@@ -71,5 +57,3 @@ def markdown_allowed():
     return ('<a href="%s" target="_blank">Markdown syntax</a> allowed, but no raw HTML. '
         'Examples: **bold**, *italic*, indent 4 spaces for a code block.'
         % settings.MARKDOWN_DEUX_HELP_URL)
-
-
